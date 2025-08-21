@@ -39,16 +39,17 @@ export const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://app.dynamic.xyz"],
-      fontSrc: ["'self'"],
+      connectSrc: ["'self'", "https://app.dynamic.xyz", "https://app.dynamicauth.com", "https://logs.dynamicauth.com", "https://vencura.fly.dev", "wss:", "https:"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://fonts.googleapis.com", "https:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      frameSrc: ["'self'", "https://app.dynamic.xyz", "https://app.dynamicauth.com", "https://verify.walletconnect.com", "https://verify.walletconnect.org"],
     },
   },
+  crossOriginEmbedderPolicy: false,
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -56,7 +57,7 @@ export const helmetConfig = helmet({
   },
 });
 
-export function errorHandler(err: Error, req: Request, res: Response): void {
+export function errorHandler(err: Error, _req: Request, res: Response): void {
   console.error('Error:', err);
   
   res.status(500).json({

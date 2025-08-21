@@ -4,15 +4,11 @@
  */
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { apiService } from '../services/api';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC = () => {
   const { handleLogOut, user } = useDynamicContext();
   const navigate = useNavigate();
 
@@ -53,7 +49,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">{children}</main>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <Outlet />
+      </main>
     </div>
   );
 };

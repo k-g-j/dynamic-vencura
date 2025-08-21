@@ -14,6 +14,7 @@ const SignMessageModal: React.FC<SignMessageModalProps> = ({ onClose, onSign }) 
   const [signature, setSignature] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   /** Handle message signing */
   const handleSign = async () => {
@@ -38,6 +39,12 @@ const SignMessageModal: React.FC<SignMessageModalProps> = ({ onClose, onSign }) 
   /** Copy signature to clipboard */
   const copySignature = () => {
     navigator.clipboard.writeText(signature);
+    setCopied(true);
+    
+    // Reset copied state after 2 seconds
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
 
   /** Reset modal state */
@@ -104,9 +111,13 @@ const SignMessageModal: React.FC<SignMessageModalProps> = ({ onClose, onSign }) 
               </div>
               <button
                 onClick={copySignature}
-                className="mt-2 text-sm text-primary-600 hover:text-primary-700"
+                className={`mt-2 text-sm transition-all duration-200 ${
+                  copied 
+                    ? 'text-green-600 font-medium' 
+                    : 'text-primary-600 hover:text-primary-700'
+                }`}
               >
-                Copy Signature
+                {copied ? '✓ Copied!' : 'Copy Signature'}
               </button>
             </div>
             

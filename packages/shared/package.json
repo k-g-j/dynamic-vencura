@@ -8,7 +8,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint . --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'No tests for shared package'"
   },
   "dependencies": {
     "zod": "^3.22.4"

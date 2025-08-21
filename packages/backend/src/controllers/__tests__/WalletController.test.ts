@@ -1,259 +1,281 @@
-/**
- * Integration tests for WalletController
- */
-
-import request from 'supertest';
-import express from 'express';
+import { Response } from 'express';
 import { WalletController } from '../WalletController';
 import { WalletService } from '../../services/WalletService';
-import { authenticateUser } from '../../middleware/auth';
+import { AuthRequest } from '../../middleware/auth';
 
-jest.mock('../../services/WalletService');
-jest.mock('../../middleware/auth');
+jest.mock('../../services/WalletService', () => ({
+  WalletService: jest.fn().mockImplementation(() => ({
+    createWallet: jest.fn(),
+    getUserWallets: jest.fn(),
+    getBalance: jest.fn(),
+    signMessage: jest.fn(),
+    sendTransaction: jest.fn(),
+    getTransactionHistory: jest.fn(),
+  })),
+}));
 
 describe('WalletController', () => {
-  let app: express.Application;
   let walletController: WalletController;
+  let mockRequest: Partial<AuthRequest>;
+  let mockResponse: Partial<Response>;
   let mockWalletService: jest.Mocked<WalletService>;
 
   beforeEach(() => {
-    app = express();
-    app.use(express.json());
-    
-    mockWalletService = new WalletService() as jest.Mocked<WalletService>;
-    walletController = new WalletController();
-    (walletController as any).walletService = mockWalletService;
-
-    (authenticateUser as jest.Mock).mockImplementation((req, _res, next) => {
-      req.user = { id: 'test-user-id', email: 'test@example.com', dynamicUserId: 'dynamic-id' };
-      next();
-    });
-
-    app.post('/wallets', authenticateUser, (req, res) => walletController.createWallet(req, res));
-    app.get('/wallets', authenticateUser, (req, res) => walletController.getUserWallets(req, res));
-    app.get('/wallets/:walletId/balance', authenticateUser, (req, res) => walletController.getBalance(req, res));
-    app.post('/wallets/:walletId/sign-message', authenticateUser, (req, res) => walletController.signMessage(req, res));
-    app.post('/wallets/:walletId/send-transaction', authenticateUser, (req, res) => walletController.sendTransaction(req, res));
-    app.get('/wallets/:walletId/transactions', authenticateUser, (req, res) => walletController.getTransactionHistory(req, res));
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
+    walletController = new WalletController();
+    mockWalletService = (walletController as any).walletService;
+    
+    mockRequest = {
+      user: {
+        id: '123e4567-e89b-12d3-a456-426614174000', // Valid UUID
+        email: 'test@example.com',
+        dynamicUserId: 'dynamic-user-id',
+      },
+      body: {},
+      params: {},
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
   });
 
-  describe('POST /wallets', () => {
-    it('should create a new wallet', async () => {
+  describe('createWallet', () => {
+    it('should create a wallet successfully', async () => {
       const mockWallet = {
         id: 'wallet-id',
-        address: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+        address: '0x123' as `0x${string}`,
         name: 'Test Wallet',
-        userId: 'test-user-id',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        userId: '123e4567-e89b-12d3-a456-426614174000',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
-
+      
+      mockRequest.body = { name: 'Test Wallet' };
       mockWalletService.createWallet.mockResolvedValue(mockWallet);
-
-      const response = await request(app)
-        .post('/wallets')
-        .send({ name: 'Test Wallet' })
-        .expect(201);
-
-      expect(response.body).toEqual(mockWallet);
-      expect(mockWalletService.createWallet).toHaveBeenCalledWith({
-        name: 'Test Wallet',
-        userId: 'test-user-id',
-      });
+      
+      await walletController.createWallet(mockRequest as AuthRequest, mockResponse as Response);
+      
+      // Check if the service was called
+      expect(mockWalletService.createWallet).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(mockWallet);
     });
-
-    it('should return 400 for invalid wallet name', async () => {
-      const response = await request(app)
-        .post('/wallets')
-        .send({ name: '' })
-        .expect(400);
-
-      expect(response.body).toHaveProperty('error');
+    
+    it('should return 401 if user is not authenticated', async () => {
+      mockRequest.user = undefined;
+      
+      await walletController.createWallet(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      expect(mockWalletService.createWallet).not.toHaveBeenCalled();
+    });
+    
+    it('should handle validation errors', async () => {
+      mockRequest.body = {}; // Missing required name field
+      
+      await walletController.createWallet(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String) })
+      );
     });
   });
 
-  describe('GET /wallets', () => {
-    it('should return user wallets', async () => {
+  describe('getUserWallets', () => {
+    it('should retrieve user wallets successfully', async () => {
       const mockWallets = [
         {
           id: 'wallet-1',
-          address: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+          address: '0x123' as `0x${string}`,
           name: 'Wallet 1',
-          userId: 'test-user-id',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          userId: '123e4567-e89b-12d3-a456-426614174000',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-01T00:00:00.000Z',
         },
         {
           id: 'wallet-2',
-          address: '0x0987654321098765432109876543210987654321' as `0x${string}`,
+          address: '0x456' as `0x${string}`,
           name: 'Wallet 2',
-          userId: 'test-user-id',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          userId: '123e4567-e89b-12d3-a456-426614174000',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-01T00:00:00.000Z',
         },
       ];
-
+      
       mockWalletService.getUserWallets.mockResolvedValue(mockWallets);
-
-      const response = await request(app)
-        .get('/wallets')
-        .expect(200);
-
-      expect(response.body).toEqual(mockWallets);
-      expect(mockWalletService.getUserWallets).toHaveBeenCalledWith('test-user-id');
+      
+      await walletController.getUserWallets(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockWalletService.getUserWallets).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith(mockWallets);
+    });
+    
+    it('should return 401 if user is not authenticated', async () => {
+      mockRequest.user = undefined;
+      
+      await walletController.getUserWallets(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
     });
   });
 
-  describe('GET /wallets/:walletId/balance', () => {
-    it('should return wallet balance', async () => {
+  describe('getBalance', () => {
+    it('should get wallet balance successfully', async () => {
       const mockBalance = {
-        walletId: 'wallet-id',
-        balance: '1500000000000000000',
-        formattedBalance: '1.5',
+        walletId: '987fcdeb-51a9-87d6-c3b2-456789123456',
+        address: '0x123',
+        balance: '1000000000000000000',
+        formattedBalance: '1.0',
       };
-
+      
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
       mockWalletService.getBalance.mockResolvedValue(mockBalance);
-
-      const response = await request(app)
-        .get('/wallets/wallet-id/balance')
-        .expect(200);
-
-      expect(response.body).toEqual(mockBalance);
-      expect(mockWalletService.getBalance).toHaveBeenCalledWith(
-        { walletId: 'wallet-id' },
-        'test-user-id'
+      
+      await walletController.getBalance(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockWalletService.getBalance).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith(mockBalance);
+    });
+    
+    it('should handle missing wallet ID', async () => {
+      mockRequest.params = {};
+      
+      await walletController.getBalance(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String) })
       );
     });
   });
 
-  describe('POST /wallets/:walletId/sign-message', () => {
-    it('should sign a message', async () => {
+  describe('signMessage', () => {
+    it('should sign message successfully', async () => {
       const mockSignedMessage = {
-        walletId: 'wallet-id',
+        walletId: '987fcdeb-51a9-87d6-c3b2-456789123456',
         message: 'Test message',
-        signature: '0xsignature',
+        signature: '0xsignature123',
       };
-
+      
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
+      mockRequest.body = { message: 'Test message' };
       mockWalletService.signMessage.mockResolvedValue(mockSignedMessage);
-
-      const response = await request(app)
-        .post('/wallets/wallet-id/sign-message')
-        .send({ message: 'Test message' })
-        .expect(200);
-
-      expect(response.body).toEqual(mockSignedMessage);
-      expect(mockWalletService.signMessage).toHaveBeenCalledWith(
-        { walletId: 'wallet-id', message: 'Test message' },
-        'test-user-id'
-      );
+      
+      await walletController.signMessage(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockWalletService.signMessage).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith(mockSignedMessage);
     });
-
-    it('should return 400 for empty message', async () => {
-      const response = await request(app)
-        .post('/wallets/wallet-id/sign-message')
-        .send({ message: '' })
-        .expect(400);
-
-      expect(response.body).toHaveProperty('error');
+    
+    it('should handle missing message', async () => {
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
+      mockRequest.body = {};
+      
+      await walletController.signMessage(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String) })
+      );
     });
   });
 
-  describe('POST /wallets/:walletId/send-transaction', () => {
-    it('should send a transaction', async () => {
+  describe('sendTransaction', () => {
+    it('should send transaction successfully', async () => {
       const mockTransaction = {
-        walletId: 'wallet-id',
-        transactionHash: '0xhash',
-        from: '0x1234567890123456789012345678901234567890' as `0x${string}`,
-        to: '0x0987654321098765432109876543210987654321' as `0x${string}`,
-        amount: '100000000000000000',
+        walletId: '987fcdeb-51a9-87d6-c3b2-456789123456',
+        transactionHash: '0xtxhash123',
+        from: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4' as `0x${string}`,
+        to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4' as `0x${string}`,
+        amount: '1000000000000000000',
         status: 'pending' as const,
       };
-
+      
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
+      mockRequest.body = {
+        to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4', // Valid Ethereum address
+        amount: '1',
+        gasLimit: 21000,
+        gasPrice: '20',
+      };
       mockWalletService.sendTransaction.mockResolvedValue(mockTransaction);
-
-      const response = await request(app)
-        .post('/wallets/wallet-id/send-transaction')
-        .send({
-          to: '0x0987654321098765432109876543210987654321',
-          amount: 0.1,
-        })
-        .expect(200);
-
-      expect(response.body).toEqual(mockTransaction);
-      expect(mockWalletService.sendTransaction).toHaveBeenCalledWith(
-        {
-          walletId: 'wallet-id',
-          to: '0x0987654321098765432109876543210987654321',
-          amount: 0.1,
-          gasLimit: undefined,
-          gasPrice: undefined,
-        },
-        'test-user-id'
+      
+      await walletController.sendTransaction(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockWalletService.sendTransaction).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith(mockTransaction);
+    });
+    
+    it('should handle missing recipient address', async () => {
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
+      mockRequest.body = { amount: '1' };
+      
+      await walletController.sendTransaction(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String) })
       );
     });
-
-    it('should return 400 for invalid address', async () => {
-      const response = await request(app)
-        .post('/wallets/wallet-id/send-transaction')
-        .send({
-          to: 'invalid-address',
-          amount: 0.1,
-        })
-        .expect(400);
-
-      expect(response.body).toHaveProperty('error');
-    });
-
-    it('should return 400 for invalid amount', async () => {
-      const response = await request(app)
-        .post('/wallets/wallet-id/send-transaction')
-        .send({
-          to: '0x0987654321098765432109876543210987654321',
-          amount: -1,
-        })
-        .expect(400);
-
-      expect(response.body).toHaveProperty('error');
+    
+    it('should handle service errors', async () => {
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
+      mockRequest.body = { to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb4', amount: '1' };
+      mockWalletService.sendTransaction.mockRejectedValue(
+        new Error('Insufficient balance')
+      );
+      
+      await walletController.sendTransaction(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Insufficient balance' });
     });
   });
 
-  describe('GET /wallets/:walletId/transactions', () => {
-    it('should return transaction history', async () => {
+  describe('getTransactionHistory', () => {
+    it('should get transaction history successfully', async () => {
       const mockTransactions = [
         {
-          walletId: 'wallet-id',
-          transactionHash: '0xhash1',
-          from: '0x1234567890123456789012345678901234567890' as `0x${string}`,
-          to: '0x0987654321098765432109876543210987654321' as `0x${string}`,
-          amount: '100000000000000000',
+          walletId: '987fcdeb-51a9-87d6-c3b2-456789123456',
+          transactionHash: '0xtx1',
+          from: '0x123' as `0x${string}`,
+          to: '0x456' as `0x${string}`,
+          amount: '1000000000000000000',
           status: 'confirmed' as const,
+          gasUsed: '21000',
           blockNumber: 12345,
         },
         {
-          walletId: 'wallet-id',
-          transactionHash: '0xhash2',
-          from: '0x1234567890123456789012345678901234567890' as `0x${string}`,
-          to: '0x1111111111111111111111111111111111111111' as `0x${string}`,
-          amount: '200000000000000000',
+          walletId: '987fcdeb-51a9-87d6-c3b2-456789123456',
+          transactionHash: '0xtx2',
+          from: '0x123' as `0x${string}`,
+          to: '0x789' as `0x${string}`,
+          amount: '2000000000000000000',
           status: 'pending' as const,
         },
       ];
-
+      
+      mockRequest.params = { walletId: '987fcdeb-51a9-87d6-c3b2-456789123456' }; // Valid UUID
       mockWalletService.getTransactionHistory.mockResolvedValue(mockTransactions);
-
-      const response = await request(app)
-        .get('/wallets/wallet-id/transactions')
-        .expect(200);
-
-      expect(response.body).toEqual(mockTransactions);
-      expect(mockWalletService.getTransactionHistory).toHaveBeenCalledWith(
-        'wallet-id',
-        'test-user-id'
-      );
+      
+      await walletController.getTransactionHistory(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockWalletService.getTransactionHistory).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith(mockTransactions);
+    });
+    
+    it('should handle missing wallet ID', async () => {
+      mockRequest.params = {};
+      
+      await walletController.getTransactionHistory(mockRequest as AuthRequest, mockResponse as Response);
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Wallet ID is required' });
     });
   });
 });

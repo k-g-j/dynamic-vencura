@@ -12,7 +12,7 @@ const envSchema = z.object({
   SEPOLIA_RPC_URL: z.string().default('https://sepolia.infura.io/v3/63264d1583fd460d8aace681426f267c'),
   DYNAMIC_ENVIRONMENT_ID: z.string(),
   DYNAMIC_API_KEY: z.string().optional(),
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().default('http://localhost:3000,https://vencura.fly.dev,https://vencura-frontend.vercel.app'),
   RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),

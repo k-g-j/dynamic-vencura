@@ -9,9 +9,6 @@ import type {
   BalanceResponse,
   SignedMessageResponse,
   TransactionResponse,
-  CreateWalletRequest,
-  SignMessageRequest,
-  SendTransactionRequest,
 } from '@vencura/shared';
 
 class ApiService {
@@ -43,8 +40,11 @@ class ApiService {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          this.clearToken();
-          window.location.href = '/login';
+          // Only redirect if not already on the login page
+          if (!window.location.pathname.includes('/login')) {
+            this.clearToken();
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }
@@ -72,14 +72,14 @@ class ApiService {
   }
 
   /** Authenticate with Dynamic token */
-  async loginWithDynamic(dynamicToken: string): Promise<{ user: any; token: string }> {
-    const response = await this.client.post('/auth/login', { dynamicToken });
+  async loginWithDynamic(dynamicToken: string): Promise<{ user: { id: string; email: string; name?: string }; token: string }> {
+    const response = await this.client.post('/auth/login', { token: dynamicToken });
     this.setToken(response.data.token);
     return response.data;
   }
 
   /** Get user profile */
-  async getProfile(): Promise<any> {
+  async getProfile(): Promise<{ id: string; email: string; name?: string }> {
     const response = await this.client.get('/auth/profile');
     return response.data;
   }

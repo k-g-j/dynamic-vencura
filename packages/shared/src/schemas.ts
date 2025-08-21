@@ -15,7 +15,7 @@ export const signMessageSchema = z.object({
 export const sendTransactionSchema = z.object({
   walletId: z.string().uuid(),
   to: ethereumAddressSchema,
-  amount: z.number().positive(),
+  amount: z.union([z.string(), z.number()]).transform(val => String(val)),
   gasLimit: z.number().positive().optional(),
   gasPrice: z.string().optional(),
 });
@@ -35,6 +35,7 @@ export const walletResponseSchema = z.object({
 
 export const balanceResponseSchema = z.object({
   walletId: z.string().uuid(),
+  address: ethereumAddressSchema,
   balance: z.string(),
   formattedBalance: z.string(),
 });

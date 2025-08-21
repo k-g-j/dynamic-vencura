@@ -18,17 +18,17 @@ export class Wallet {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   @Index()
   address!: string;
 
   @Column({ type: 'text' })
   encryptedPrivateKey!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   userId!: string;
 
   @ManyToOne(() => User, (user) => user.wallets)

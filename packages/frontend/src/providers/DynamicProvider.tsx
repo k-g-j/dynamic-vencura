@@ -15,14 +15,14 @@ const DynamicProvider: React.FC<DynamicProviderProps> = ({ children }) => {
   return (
     <DynamicContextProvider
       settings={{
-        environmentId: import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID || '',
+        environmentId: import.meta.env['VITE_DYNAMIC_ENVIRONMENT_ID'] || '',
         walletConnectors: [EthereumWalletConnectors],
         events: {
           onAuthSuccess: async (args) => {
-            console.log('Dynamic auth success:', args);
+            // Auth success handled in Login component
           },
           onLogout: async () => {
-            console.log('Dynamic logout');
+            // Logout handled in Layout component
           },
         },
       }}

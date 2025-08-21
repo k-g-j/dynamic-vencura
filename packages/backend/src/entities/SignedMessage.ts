@@ -13,7 +13,7 @@ export class SignedMessage {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   walletId!: string;
 
   @ManyToOne(() => Wallet, (wallet) => wallet.signedMessages)

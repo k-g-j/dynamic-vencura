@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import DynamicProvider from './providers/DynamicProvider';
 import Layout from './components/Layout';
+import HomePage from './pages/Home';
 import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
 import WalletDetailPage from './pages/WalletDetail';
@@ -19,23 +20,13 @@ const AppContent: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />} />
-        <Route
-          path="/"
-          element={
-            isAuthenticated ? (
-              <Layout>
-                <Routes>
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/wallet/:walletId" element={<WalletDetailPage />} />
-                  <Route path="/" element={<Navigate to="/dashboard" />} />
-                </Routes>
-              </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/wallet/:walletId" element={<WalletDetailPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );

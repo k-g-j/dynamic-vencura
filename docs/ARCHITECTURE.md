@@ -8,9 +8,6 @@ This document captures the key architectural decisions made during the developme
 
 ### ADR-001: Monorepo Structure
 
-**Status**: Accepted  
-**Date**: 2024
-
 **Context**  
 The project requires both backend API and frontend application with shared types and schemas.
 
@@ -34,9 +31,6 @@ Implement a monorepo structure using npm workspaces with three packages:
 ---
 
 ### ADR-002: TypeScript with Strict Configuration
-
-**Status**: Accepted  
-**Date**: 2024
 
 **Context**  
 Type safety is critical for financial applications handling cryptocurrency transactions.
@@ -62,9 +56,6 @@ Enable all strict TypeScript compiler options including:
 ---
 
 ### ADR-003: Custodial Wallet Architecture
-
-**Status**: Accepted  
-**Date**: 2024
 
 **Context**  
 The application needs to manage Ethereum wallets on behalf of users.
@@ -94,39 +85,32 @@ Implement custodial wallet management where:
 
 ---
 
-### ADR-004: Database Choice - PostgreSQL with TypeORM
-
-**Status**: Accepted  
-**Date**: 2024
+### ADR-004: Database Choice - SQLite/PostgreSQL with TypeORM
 
 **Context**  
 Need reliable data storage for users, wallets, and transaction history.
 
 **Decision**  
-Use PostgreSQL with TypeORM as the ORM layer.
+Use SQLite for development and PostgreSQL for production with TypeORM as the ORM layer.
 
 **Rationale**
 - **ACID Compliance**: Critical for financial data integrity
 - **Relational Model**: Natural fit for user-wallet-transaction relationships
 - **TypeORM Benefits**: TypeScript integration, migrations, decorators
-- **Production Ready**: PostgreSQL is battle-tested for financial applications
+- **Flexibility**: SQLite for easy local development, PostgreSQL for production scale
 
 **Alternatives Considered**
 - **MongoDB**: Rejected due to lack of ACID guarantees
-- **SQLite**: Rejected as not suitable for production scale
 - **Prisma**: Considered but TypeORM decorators align better with architecture
 
 **Consequences**
-- Requires PostgreSQL installation and management
 - TypeORM learning curve for decorators
 - Schema migrations must be managed
+- Different database configurations for dev/prod
 
 ---
 
 ### ADR-005: Authentication Strategy - Dynamic SDK
-
-**Status**: Accepted  
-**Date**: 2024
 
 **Context**  
 Need secure authentication that integrates with Web3 wallets.
@@ -154,9 +138,6 @@ Use Dynamic SDK for authentication with JWT tokens for API access.
 
 ### ADR-006: Blockchain Integration - Ethers.js v6
 
-**Status**: Accepted  
-**Date**: 2024
-
 **Context**  
 Need to interact with Ethereum blockchain for wallet operations.
 
@@ -171,15 +152,12 @@ Use Ethers.js v6 for all blockchain interactions.
 
 **Alternatives Considered**
 - **Web3.js**: More complex API, larger bundle size
-- **Viem**: Newer, less established
+- **Viem**: Newer, less established at time of decision
 - **Direct RPC**: Too low-level, would require reimplementing features
 
 ---
 
 ### ADR-007: Security Architecture
-
-**Status**: Accepted  
-**Date**: 2024
 
 **Context**  
 Handling cryptocurrency requires maximum security considerations.
@@ -197,6 +175,7 @@ Implement defense-in-depth security strategy:
    - Rate limiting (general and transaction-specific)
    - Input validation with Zod
    - Helmet.js for headers
+   - CORS configuration
 
 3. **Access Control**
    - User isolation (users access only their wallets)
@@ -217,9 +196,6 @@ Implement defense-in-depth security strategy:
 ---
 
 ### ADR-008: Frontend Architecture - React with Vite
-
-**Status**: Accepted  
-**Date**: 2024
 
 **Context**  
 Need a modern, performant frontend for wallet management interface.
@@ -242,9 +218,6 @@ Use React with Vite as the build tool and Tailwind CSS for styling.
 
 ### ADR-009: Testing Strategy
 
-**Status**: Accepted  
-**Date**: 2024
-
 **Context**  
 Financial applications require comprehensive testing.
 
@@ -253,10 +226,12 @@ Implement multi-level testing strategy:
 - Unit tests for services and utilities
 - Integration tests for API endpoints
 - Mocked blockchain interactions for testing
+- Component testing for React frontend
 
 **Tools**
 - Jest as test runner
 - Supertest for API testing
+- React Testing Library for frontend
 - Mock implementations for external services
 
 **Rationale**
@@ -268,9 +243,6 @@ Implement multi-level testing strategy:
 
 ### ADR-010: Error Handling Strategy
 
-**Status**: Accepted  
-**Date**: 2024
-
 **Context**  
 Need consistent error handling across the application.
 
@@ -280,6 +252,7 @@ Implement structured error handling:
 - Custom error classes for business logic
 - Centralized error middleware
 - Structured error responses
+- Correlation IDs for request tracking
 
 **Error Response Format**
 ```json
@@ -287,14 +260,52 @@ Implement structured error handling:
   "error": "Error type",
   "message": "Human readable message",
   "statusCode": 400,
-  "timestamp": "2024-01-01T00:00:00Z"
+  "timestamp": "2024-01-01T00:00:00Z",
+  "correlationId": "uuid-v4"
 }
 ```
 
 **Rationale**
 - **Consistency**: Predictable error format
-- **Debugging**: Detailed error information
+- **Debugging**: Detailed error information with correlation IDs
 - **Security**: Avoids leaking sensitive information
+
+---
+
+### ADR-011: API Documentation - OpenAPI/Swagger
+
+**Context**  
+Need comprehensive API documentation for developers.
+
+**Decision**  
+Implement OpenAPI/Swagger documentation with swagger-jsdoc and swagger-ui-express.
+
+**Rationale**
+- **Interactive Documentation**: Try API endpoints directly
+- **Type Safety**: Generated from TypeScript types
+- **Developer Experience**: Clear API contracts
+- **Standards Compliance**: OpenAPI 3.0 specification
+
+---
+
+### ADR-012: Deployment Strategy - Fly.io
+
+**Context**  
+Need reliable hosting for production deployment.
+
+**Decision**  
+Deploy to Fly.io with Docker containerization.
+
+**Rationale**
+- **Global Edge Network**: Low latency worldwide
+- **PostgreSQL Support**: Managed database available
+- **Easy Scaling**: Horizontal scaling capabilities
+- **Cost Effective**: Good free tier for MVP
+
+**Implementation**
+- Multi-stage Docker build
+- Environment-based configuration
+- Health checks and monitoring
 
 ---
 
@@ -325,13 +336,13 @@ Implement structured error handling:
 - Comprehensive documentation
 - Automated testing
 
-## Technology Choices Summary
+## Technology Stack Summary
 
 | Category | Choice | Rationale |
 |----------|--------|-----------|
 | Language | TypeScript | Type safety, ecosystem |
 | Backend Framework | Express | Simplicity, flexibility |
-| Database | PostgreSQL | ACID compliance, reliability |
+| Database | SQLite/PostgreSQL | ACID compliance, reliability |
 | ORM | TypeORM | TypeScript integration |
 | Blockchain | Ethers.js v6 | Maturity, features |
 | Authentication | Dynamic SDK | Web3 native |
@@ -339,6 +350,37 @@ Implement structured error handling:
 | Build Tool | Vite | Performance, DX |
 | CSS | Tailwind | Rapid development |
 | Testing | Jest | Comprehensive, established |
+| API Docs | Swagger/OpenAPI | Interactive documentation |
+| Deployment | Fly.io | Global edge, PostgreSQL support |
+
+## Current Implementation Status
+
+### Completed Features
+- ✅ User authentication with Dynamic SDK
+- ✅ Wallet creation and management
+- ✅ Private key encryption
+- ✅ Balance checking
+- ✅ Transaction sending
+- ✅ Message signing
+- ✅ Transaction history
+- ✅ Rate limiting
+- ✅ Input validation
+- ✅ Error handling
+- ✅ API documentation
+- ✅ Comprehensive testing
+- ✅ Webhook support
+- ✅ Metrics collection
+- ✅ Backup/recovery mechanisms
+
+### Security Implementations
+- ✅ AES-256-GCM encryption
+- ✅ JWT authentication
+- ✅ Rate limiting (general and per-wallet)
+- ✅ Transaction amount limits
+- ✅ Input validation with Zod
+- ✅ Helmet.js security headers
+- ✅ CORS configuration
+- ✅ Request signing
 
 ## Future Considerations
 
@@ -346,20 +388,25 @@ Implement structured error handling:
 - Implement caching layer (Redis)
 - Message queue for transaction processing
 - Database read replicas
+- Load balancing
 
 ### Security Enhancements
 - Hardware Security Module (HSM)
 - Multi-signature wallets
 - Advanced threat detection
+- Two-factor authentication
 
 ### Features
 - Multi-chain support
 - Non-custodial option
 - Social recovery mechanisms
 - Batch transactions
+- Gas price optimization
+- Transaction status webhooks
 
 ### Operations
-- Comprehensive monitoring
+- Comprehensive monitoring (Prometheus/Grafana)
 - Automated backups
 - Disaster recovery plan
 - Compliance automation
+- Audit trail enhancements

@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { apiService } from '../services/api';
 import { WalletResponse } from '@vencura/shared';
 import toast from 'react-hot-toast';
@@ -15,11 +16,35 @@ const DashboardPage: React.FC = () => {
   const [wallets, setWallets] = useState<WalletResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { isAuthenticated, authToken } = useDynamicContext();
+  const navigate = useNavigate();
 
   /** Load user wallets on component mount */
   useEffect(() => {
-    loadWallets();
-  }, []);
+    // First ensure we have proper authentication
+    const initAuth = async () => {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+
+      // If we have Dynamic auth but no backend token, authenticate with backend
+      if (authToken && !apiService.getToken()) {
+        try {
+          await apiService.loginWithDynamic(authToken);
+        } catch (error) {
+          toast.error('Authentication failed. Please login again.');
+          navigate('/login');
+          return;
+        }
+      }
+
+      // Now load wallets
+      await loadWallets();
+    };
+
+    initAuth();
+  }, [isAuthenticated, authToken, navigate]);
 
   /** Fetch wallets from API */
   const loadWallets = async () => {
@@ -27,9 +52,11 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       const data = await apiService.getWallets();
       setWallets(data);
-    } catch (error) {
-      console.error('Failed to load wallets:', error);
-      toast.error('Failed to load wallets');
+    } catch (error: any) {
+      // Don't show error toast if it's an auth error (will redirect)
+      if (error.response?.status !== 401) {
+        toast.error('Failed to load wallets');
+      }
     } finally {
       setLoading(false);
     }
@@ -43,7 +70,6 @@ const DashboardPage: React.FC = () => {
       toast.success('Wallet created successfully!');
       setShowCreateModal(false);
     } catch (error) {
-      console.error('Failed to create wallet:', error);
       toast.error('Failed to create wallet');
     }
   };

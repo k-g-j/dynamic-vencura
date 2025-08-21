@@ -14,15 +14,15 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   @Index()
   email!: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   @Index()
   dynamicUserId!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   name?: string;
 
   @OneToMany(() => Wallet, (wallet) => wallet.user)

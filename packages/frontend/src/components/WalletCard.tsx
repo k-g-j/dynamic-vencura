@@ -22,7 +22,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ wallet }) => {
         const data = await apiService.getBalance(wallet.id);
         setBalance(data);
       } catch (error) {
-        console.error('Failed to load balance:', error);
+        // Silently handle balance loading errors
       } finally {
         setLoading(false);
       }
