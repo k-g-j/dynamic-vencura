@@ -7,7 +7,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/wallets', walletRoutes);
 
-router.get('/health', (req, res) => {
+router.get('/health', (_req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 

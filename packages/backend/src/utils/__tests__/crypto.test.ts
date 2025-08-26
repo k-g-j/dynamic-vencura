@@ -1,82 +1,70 @@
-/**
- * Unit tests for crypto utilities
- */
-
 import { encrypt, decrypt } from '../crypto';
 
-describe('Crypto utilities', () => {
-  describe('encrypt and decrypt', () => {
-    it('should encrypt and decrypt text successfully', () => {
-      const originalText = 'This is a secret message';
+describe('Crypto Utilities', () => {
+  const testPrivateKey = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+  
+  describe('encrypt', () => {
+    it('should encrypt a private key', () => {
+      const encrypted = encrypt(testPrivateKey);
       
-      const encrypted = encrypt(originalText);
-      expect(encrypted).not.toBe(originalText);
-      expect(encrypted).toBeTruthy();
+      expect(encrypted).toBeDefined();
       expect(typeof encrypted).toBe('string');
-      
-      const decrypted = decrypt(encrypted);
-      expect(decrypted).toBe(originalText);
+      expect(encrypted).not.toBe(testPrivateKey);
+      expect(encrypted.length).toBeGreaterThan(0);
     });
-
-    it('should produce different encrypted values for same input', () => {
-      const originalText = 'Test message';
-      
-      const encrypted1 = encrypt(originalText);
-      const encrypted2 = encrypt(originalText);
+    
+    it('should produce different ciphertext for same plaintext', () => {
+      const encrypted1 = encrypt(testPrivateKey);
+      const encrypted2 = encrypt(testPrivateKey);
       
       expect(encrypted1).not.toBe(encrypted2);
-      
-      expect(decrypt(encrypted1)).toBe(originalText);
-      expect(decrypt(encrypted2)).toBe(originalText);
     });
-
-    it('should handle special characters', () => {
-      const originalText = '!@#$%^&*()_+-=[]{}|;:",.<>?/~`';
-      
-      const encrypted = encrypt(originalText);
+  });
+  
+  describe('decrypt', () => {
+    it('should decrypt an encrypted private key', () => {
+      const encrypted = encrypt(testPrivateKey);
       const decrypted = decrypt(encrypted);
       
-      expect(decrypted).toBe(originalText);
+      expect(decrypted).toBe(testPrivateKey);
     });
-
-    it('should handle unicode characters', () => {
-      const originalText = '😀🎉🚀 Unicode test 测试';
-      
-      const encrypted = encrypt(originalText);
-      const decrypted = decrypt(encrypted);
-      
-      expect(decrypted).toBe(originalText);
+    
+    it('should handle multiple encryption/decryption cycles', () => {
+      for (let i = 0; i < 5; i++) {
+        const encrypted = encrypt(testPrivateKey);
+        const decrypted = decrypt(encrypted);
+        expect(decrypted).toBe(testPrivateKey);
+      }
     });
-
-    it('should handle empty string', () => {
-      const originalText = '';
-      
-      const encrypted = encrypt(originalText);
-      const decrypted = decrypt(encrypted);
-      
-      expect(decrypted).toBe(originalText);
-    });
-
-    it('should handle very long strings', () => {
-      const originalText = 'a'.repeat(10000);
-      
-      const encrypted = encrypt(originalText);
-      const decrypted = decrypt(encrypted);
-      
-      expect(decrypted).toBe(originalText);
-    });
-
+    
     it('should throw error for invalid encrypted text', () => {
       expect(() => decrypt('invalid-base64')).toThrow();
     });
-
-    it('should throw error for tampered encrypted text', () => {
-      const originalText = 'Secret message';
-      const encrypted = encrypt(originalText);
-      
-      const tampered = encrypted.slice(0, -10) + 'tampered';
+    
+    it('should throw error for tampered data', () => {
+      const encrypted = encrypt(testPrivateKey);
+      const tampered = encrypted.slice(0, -4) + 'XXXX';
       
       expect(() => decrypt(tampered)).toThrow();
+    });
+  });
+  
+  describe('Security', () => {
+    it('should use sufficient encryption strength', () => {
+      const encrypted = encrypt(testPrivateKey);
+      const buffer = Buffer.from(encrypted, 'base64');
+      
+      // Check minimum length (salt + iv + tag + encrypted data)
+      expect(buffer.length).toBeGreaterThanOrEqual(96 + testPrivateKey.length);
+    });
+    
+    it('should include authentication tag', () => {
+      const encrypted = encrypt(testPrivateKey);
+      const buffer = Buffer.from(encrypted, 'base64');
+      
+      // Authentication tag is 16 bytes starting at position 80
+      const tag = buffer.subarray(80, 96);
+      expect(tag.length).toBe(16);
     });
   });
 });

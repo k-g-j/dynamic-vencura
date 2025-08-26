@@ -15,12 +15,13 @@
     "@dynamic-labs/ethereum": "^2.0.0",
     "@dynamic-labs/sdk-react-core": "^2.0.0",
     "@vencura/shared": "^1.0.0",
+    "axios": "^1.6.5",
     "ethers": "^6.10.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.0",
     "react-hot-toast": "^2.4.1",
-    "axios": "^1.6.5",
+    "react-router-dom": "^6.21.0",
+    "socket.io-client": "^4.8.1",
     "viem": "^2.0.0"
   },
   "devDependencies": {

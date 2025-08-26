@@ -15,40 +15,45 @@ export class Transaction {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   walletId!: string;
 
   @ManyToOne(() => Wallet, (wallet) => wallet.transactions)
   @JoinColumn({ name: 'walletId' })
   wallet!: Wallet;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   @Index()
   transactionHash!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   @Index()
   from!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   @Index()
   to!: string;
 
-  @Column({ type: 'decimal', precision: 78, scale: 18 })
+  @Column({ 
+    type: 'varchar',
+    transformer: {
+      to: (value: string) => value,
+      from: (value: string) => value ? String(value) : '0'
+    }
+  })
   amount!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   gasUsed?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   gasPrice?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'integer', nullable: true })
   blockNumber?: number;
 
   @Column({
-    type: 'enum',
-    enum: ['pending', 'confirmed', 'failed'],
+    type: 'varchar',
     default: 'pending',
   })
   @Index()

@@ -20,8 +20,22 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
   /** Format transaction amount */
   const formatAmount = (amount: string) => {
     try {
-      return ethers.formatEther(amount);
-    } catch {
+      // Check if amount is a valid string
+      if (!amount || amount === '0' || amount === '') {
+        return '0';
+      }
+      
+      // Amount is stored in Wei, convert to ETH for display
+      const ethAmount = ethers.formatEther(amount);
+      
+      // Format to reasonable decimal places
+      const formatted = parseFloat(ethAmount);
+      if (formatted === 0) {
+        return '0';
+      }
+      // Show up to 6 decimal places, removing trailing zeros
+      return formatted.toFixed(6).replace(/\.?0+$/, '');
+    } catch (error) {
       return '0';
     }
   };
